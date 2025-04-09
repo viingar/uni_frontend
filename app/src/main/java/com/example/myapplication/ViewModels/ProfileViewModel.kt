@@ -20,10 +20,8 @@ class ProfileViewModel(
     val userInfo: StateFlow<UserInfo?> = _userInfo.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
     private val _logoutSuccess = MutableStateFlow(false)
     val logoutSuccess: StateFlow<Boolean> = _logoutSuccess.asStateFlow()
@@ -33,7 +31,6 @@ class ProfileViewModel(
             try {
                 val response = secureApiService.logout()
                 if (response.isSuccessful) {
-                    // Очищаем токен из SharedPreferences
                     clearToken()
                     _logoutSuccess.value = true
                 } else {
@@ -83,9 +80,9 @@ class ProfileViewModel(
             try {
                 val response = secureApiService.reportError(ErrorReportRequest(message))
                 if (!response.isSuccessful) {
-
+                    println("Ошибка отправлена")
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
 
             }
         }

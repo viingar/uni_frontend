@@ -25,7 +25,6 @@ class MainViewModel(
     val showDialog: StateFlow<Boolean> = _showDialog.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     fun showAddManualDialog() {
         _showDialog.value = true

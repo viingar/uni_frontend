@@ -20,7 +20,6 @@ class LoginViewModel(
     val loginSuccess: StateFlow<Boolean> = _loginSuccess.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     companion object {
         private const val TAG = "LoginViewModel"

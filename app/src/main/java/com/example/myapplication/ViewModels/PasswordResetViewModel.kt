@@ -17,7 +17,7 @@ class PasswordResetViewModel(
             try {
                 val response = apiService.checkEmail(EmailRequest(email))
                 callback(response.isSuccessful)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 callback(false)
             }
         }
@@ -27,7 +27,7 @@ class PasswordResetViewModel(
             try {
                 val response = apiService.validateCode(CodeResetRequest(email, code))
                 callback(response.isSuccessful)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 callback(false)
             }
         }
@@ -44,7 +44,7 @@ class PasswordResetViewModel(
                     ResetPasswordRequest(email, newPassword, confirmPassword)
                 )
                 callback(response.isSuccessful)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 callback(false)
             }
         }
@@ -53,7 +53,7 @@ class PasswordResetViewModel(
         viewModelScope.launch {
             try {
                 apiService.checkEmail(EmailRequest(email))
-            } catch (e: Exception) {
+            } catch (_: Exception) {
 
             }
         }

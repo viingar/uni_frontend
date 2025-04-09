@@ -47,7 +47,7 @@ fun EmailConfirmationScreen(
         OutlinedTextField(
             value = email,
             onValueChange = {},
-            label = { Text("Email") },
+            label = { Text("Электронная почта") },
             enabled = false,
             modifier = Modifier.fillMaxWidth()
         )
@@ -57,7 +57,7 @@ fun EmailConfirmationScreen(
         OutlinedTextField(
             value = verificationCode,
             onValueChange = { verificationCode = it },
-            label = { Text("Verification Code") },
+            label = { Text("Код подтверждения") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -83,7 +83,7 @@ fun EmailConfirmationScreen(
             if (isLoading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Verify Email")
+                Text("Подтвердить почту")
             }
         }
     }

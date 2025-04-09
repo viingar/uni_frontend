@@ -54,7 +54,6 @@ fun RegisterScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Username field
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
@@ -65,7 +64,6 @@ fun RegisterScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Email field
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -76,7 +74,6 @@ fun RegisterScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Password field
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },

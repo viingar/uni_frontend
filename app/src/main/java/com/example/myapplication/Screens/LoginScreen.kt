@@ -1,9 +1,10 @@
 package com.example.myapplication.Screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -21,7 +22,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.myapplication.ViewModels.LoginViewModel
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -41,6 +41,7 @@ fun LoginScreenPreview() {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
@@ -55,7 +56,6 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
     val isFormValid = username.isNotBlank() && password.isNotBlank()
     val loginSuccess by viewModel.loginSuccess.collectAsState()
 
@@ -67,7 +67,6 @@ fun LoginScreen(
         }
     }
 
-
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -77,28 +76,29 @@ fun LoginScreen(
             contentScale = ContentScale.FillBounds,
             modifier = Modifier
                 .fillMaxSize()
-
+                .offset(y = 0.dp)
+                .align(Alignment.TopCenter)
         )
-        Card(
+
+        Surface(
             modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .align(Alignment.Center)
-                .shadow(
-                    elevation = 16.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                ),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-            )
+                .fillMaxSize()
+                .padding(top = 160.dp),
+            shape = RoundedCornerShape(
+                topStart = 32.dp,
+                topEnd = 32.dp
+            ),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Логотип (теперь без tint)
+                Spacer(modifier = Modifier.height(60.dp))
+
                 Image(
                     painter = painterResource(id = R.drawable.iconlogo),
                     contentDescription = "App Logo",
@@ -150,15 +150,6 @@ fun LoginScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
@@ -184,54 +175,53 @@ fun LoginScreen(
                         )
                     )
                 }
-            }
-        }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp)
-                .fillMaxWidth(0.85f),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            TextButton(
-                onClick = { navController.navigate("forgot_password") },
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text(
-                    text = "Забыли пароль?",
-                    color = Color.Black
-                )
-            }
+                Spacer(modifier = Modifier.weight(1f))
 
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                thickness = 2.dp,
-                color = Color.Black.copy(alpha = 0.1f)
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Text(
-                    text = "Нет аккаунта? ",
-                    color = Color.Black
-
-                )
-                TextButton(
-                    onClick = { navController.navigate("register") },
-                    modifier = Modifier.padding(0.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Зарегистрироваться",
-                        color = Color.Black,
-                            textDecoration = TextDecoration.Underline,
-                            fontWeight = FontWeight.Bold
+                    TextButton(
+                        onClick = { navController.navigate("forgot_password") },
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Text(
+                            text = "Забыли пароль?",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
 
+                    Divider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text(
+                            text = "Нет аккаунта? ",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        TextButton(
+                            onClick = { navController.navigate("register") },
+                            modifier = Modifier.padding(0.dp)
+                        ) {
+                            Text(
+                                text = "Зарегистрироваться",
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }

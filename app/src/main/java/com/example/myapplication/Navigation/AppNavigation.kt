@@ -1,5 +1,7 @@
 package com.example.myapplication.Navigation
 
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -14,8 +16,8 @@ import com.example.myapplication.Screens.RegisterScreen
 import com.example.myapplication.Screens.ResetPasswordScreen
 import com.example.myapplication.Screens.SendEmailScreen
 import com.example.myapplication.Screens.ValidationCodeScreen
-import com.example.myapplication.WelcomeScreen
 
+@OptIn(ExperimentalGetImage::class)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -39,9 +41,6 @@ fun AppNavigation() {
         }
         composable("login"){
             LoginScreen(navController)
-        }
-        composable("welcome"){
-            WelcomeScreen(navController)
         }
         composable("profile"){
             ProfileScreen(navController)

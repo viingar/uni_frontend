@@ -1,6 +1,5 @@
 package com.example.myapplication.ViewModels
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.api.AuthRequest
@@ -21,7 +20,7 @@ class RegisterViewModel : ViewModel() {
                     AuthRequest(username, email, password)
                 )
                 _registrationSuccess.value = response.isSuccessful
-            } catch (e: Exception) {
+            } catch (_: Exception) {
 
             }
         }
