@@ -97,7 +97,6 @@ fun RegisterScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Confirm Password field
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
@@ -142,7 +141,6 @@ fun RegisterScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Плашка с переходом на страницу логина
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

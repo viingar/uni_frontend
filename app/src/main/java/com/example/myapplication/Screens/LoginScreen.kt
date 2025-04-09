@@ -1,6 +1,9 @@
 package com.example.myapplication.Screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -18,12 +21,27 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.myapplication.ViewModels.LoginViewModel
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.api.RetrofitClient
+import com.example.myapplication.R
+import com.example.myapplication.ui.theme.MyApplicationTheme
 
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    MyApplicationTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            LoginScreen(navController = rememberNavController())
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navController: NavController,
@@ -37,11 +55,9 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
     val isFormValid = username.isNotBlank() && password.isNotBlank()
-
-    val viewModel: LoginViewModel = viewModel()
     val loginSuccess by viewModel.loginSuccess.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
@@ -51,79 +67,173 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Username field
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("Логин") },
-            leadingIcon = {
-                Icon(Icons.Default.Person, contentDescription = "Логин")
-            },
-            modifier = Modifier.fillMaxWidth()
+        Image(
+            painter = painterResource(id = R.drawable.bgmain),
+            contentDescription = "Background",
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier
+                .fillMaxSize()
+
         )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .align(Alignment.Center)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                ),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Логотип (теперь без tint)
+                Image(
+                    painter = painterResource(id = R.drawable.iconlogo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(200.dp),
+                    contentScale = ContentScale.Fit
+                )
 
-        Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-        // Password field with toggle visibility
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Пароль") },
-            leadingIcon = {
-                Icon(Icons.Default.Lock, contentDescription = "Пароль")
-            },
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Логин") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Person, contentDescription = "Логин")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Пароль") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Lock, contentDescription = "Пароль")
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        if (isFormValid) {
+                            viewModel.loginUser(username, password)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    enabled = isFormValid,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Войти",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Medium
+                        )
                     )
                 }
-            },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        TextButton(
-            onClick = { navController.navigate("forgot_password") }
-        ) {
-            Text("Забыли пароль?")
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                if (isFormValid) {
-                    viewModel.loginUser(username, password)
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = isFormValid
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 40.dp)
+                .fillMaxWidth(0.85f),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Войти")
-        }
+            TextButton(
+                onClick = { navController.navigate("forgot_password") },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(
+                    text = "Забыли пароль?",
+                    color = Color.Black
+                )
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                thickness = 2.dp,
+                color = Color.Black.copy(alpha = 0.1f)
+            )
 
-        // Ссылка для перехода к регистрации
-        ClickableText(
-            text = buildAnnotatedString {
-                append("Нет аккаунта? ")
-                withStyle(style = SpanStyle(
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline
-                )) {
-                    append("Зарегистрироваться")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(
+                    text = "Нет аккаунта? ",
+                    color = Color.Black
+
+                )
+                TextButton(
+                    onClick = { navController.navigate("register") },
+                    modifier = Modifier.padding(0.dp)
+                ) {
+                    Text(
+                        text = "Зарегистрироваться",
+                        color = Color.Black,
+                            textDecoration = TextDecoration.Underline,
+                            fontWeight = FontWeight.Bold
+
+                    )
                 }
-            },
-            onClick = { navController.navigate("register") }
-        )
+            }
+        }
     }
 }

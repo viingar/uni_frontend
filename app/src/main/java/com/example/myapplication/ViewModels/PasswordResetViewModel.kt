@@ -54,7 +54,7 @@ class PasswordResetViewModel(
             try {
                 apiService.checkEmail(EmailRequest(email))
             } catch (e: Exception) {
-                // Обработка ошибки
+
             }
         }
     }

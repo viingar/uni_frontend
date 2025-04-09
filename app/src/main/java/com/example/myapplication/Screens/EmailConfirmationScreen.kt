@@ -74,7 +74,7 @@ fun EmailConfirmationScreen(
         Button(
             onClick = {
                 if (verificationCode.isNotBlank()) {
-                    viewModel.verifyEmail(verificationCode) // Только код, email уже в ViewModel
+                    viewModel.verifyEmail(verificationCode)
                 }
             },
             modifier = Modifier.fillMaxWidth(),

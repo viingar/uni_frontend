@@ -1,7 +1,16 @@
 package com.example.myapplication.Screens
+
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.ViewGroup
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.camera.core.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,25 +26,48 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.myapplication.ViewModels.MainViewModel
 import com.example.myapplication.ViewModels.MainViewModel.MainViewModelFactory
-import com.example.myapplication.ViewModels.RegisterViewModel
 import com.example.myapplication.api.Receipt
 import com.example.myapplication.api.ReceiptData
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import com.example.myapplication.R
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 
 @OptIn(ExperimentalMaterial3Api::class)
+@androidx.camera.core.ExperimentalGetImage
 @Composable
 fun MainScreen(
     navController: NavController,
@@ -45,37 +77,29 @@ fun MainScreen(
 ) {
     val showDialog by viewModel.showDialog.collectAsState()
     val receipts by remember { derivedStateOf { viewModel.receipts } }
-    val errorMessage by viewModel.errorMessage.collectAsState()
     var showFilterMenu by remember { mutableStateOf(false) }
     var filterType by remember { mutableStateOf<FilterType?>(null) }
     var selectedStore by remember { mutableStateOf<String?>(null) }
     var showStoreSubmenu by remember { mutableStateOf(false) }
     var showAnalyticsDialog by remember { mutableStateOf(false) }
     var selectedPeriod by remember { mutableStateOf(Period.WEEK) }
-
-    // Для навигации
+    var showScanner by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf(0) }
     val items = listOf("Карта", "Главная", "Профиль")
 
-    // Получаем уникальные названия магазинов
+
     val storeNames by remember(receipts) {
         derivedStateOf {
-            receipts.map { it.storeName ?: "Неизвестный магазин" }.distinct().sorted()
+            receipts.map { it.storeName }.distinct().sorted()
         }
     }
 
-    // Фильтрованные чеки
     val filteredReceipts by remember(receipts, filterType, selectedStore) {
         derivedStateOf {
             when (filterType) {
                 FilterType.DATE -> {
                     receipts.sortedByDescending { receipt ->
-                        try {
-                            DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("ru"))
-                                .parse(receipt.dateTime ?: "", LocalDate::from)
-                        } catch (e: Exception) {
-                            LocalDate.MIN
-                        }
+                        receipt.dateTime
                     }
                 }
                 FilterType.STORE -> {
@@ -85,19 +109,20 @@ fun MainScreen(
                         receipts.sortedBy { it.storeName }
                     }
                 }
-                FilterType.AMOUNT -> receipts.sortedByDescending {
-                    it.totalSum?.toDoubleOrNull() ?: 0.0
+                FilterType.AMOUNT -> {
+                    receipts.sortedByDescending { receipt ->
+                        receipt.totalSum.parseLocalizedNumber()
+                    }
                 }
                 null -> receipts
             }
         }
     }
 
-    // Группируем чеки по датам
     val groupedReceipts by remember(filteredReceipts) {
         derivedStateOf {
             filteredReceipts.groupBy { receipt ->
-                receipt.dateTime ?: "Без даты"
+                receipt.dateTime
             }
         }
     }
@@ -106,12 +131,24 @@ fun MainScreen(
         viewModel.loadReceipts()
     }
 
+    if (showScanner) {
+        QRCodeScanner { qrContent ->
+            showScanner = false
+            if (qrContent != null) {
+                val receiptData = parseQRContent(qrContent)
+                if (receiptData != null) {
+                    viewModel.addReceipt(receiptData)
+                    viewModel.loadReceipts()
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Мои чеки") },
                 actions = {
-                    // Кнопка аналитики
                     IconButton(onClick = { showAnalyticsDialog = true }) {
                         Icon(Icons.Default.Analytics, contentDescription = "Аналитика расходов")
                     }
@@ -158,7 +195,6 @@ fun MainScreen(
                         }
                     }
 
-                    // Подменю выбора магазина
                     DropdownMenu(
                         expanded = showStoreSubmenu,
                         onDismissRequest = { showStoreSubmenu = false }
@@ -189,8 +225,35 @@ fun MainScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.showAddManualDialog() }) {
-                Icon(Icons.Default.Add, contentDescription = "Add manually")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Surface(
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .clickable { showScanner = true },
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "Сканировать чек",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Сканировать чек",
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+
+                FloatingActionButton(onClick = { viewModel.showAddManualDialog() }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add manually")
+                }
             }
         },
         bottomBar = {
@@ -200,25 +263,19 @@ fun MainScreen(
                         icon = {
                             when (index) {
                                 0 -> Icon(
-                                    painter = painterResource(id = R.drawable.map),
+                                    Icons.Default.AddLocation,
                                     contentDescription = item,
-                                    modifier = Modifier
-                                        .size(25.dp)
-                                        .padding(end = 8.dp),
+                                    modifier = Modifier.size(25.dp)
                                 )
                                 1 -> Icon(
                                     Icons.Default.Home,
                                     contentDescription = item,
-                                    modifier = Modifier
-                                        .size(25.dp)
-                                        .padding(end = 8.dp),
+                                    modifier = Modifier.size(25.dp)
                                 )
                                 2 -> Icon(
                                     painter = painterResource(id = R.drawable.profile),
                                     contentDescription = item,
-                                    modifier = Modifier
-                                        .size(25.dp)
-                                        .padding(end = 8.dp),
+                                    modifier = Modifier.size(25.dp)
                                 )
                             }
                         },
@@ -244,7 +301,17 @@ fun MainScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No receipts found")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Чеки отсутствуют")
+                    Button(
+                        onClick = { showScanner = true },
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Сканировать чек")
+                    }
+                }
             }
         } else {
             LazyColumn(modifier = Modifier.padding(padding)) {
@@ -274,7 +341,6 @@ fun MainScreen(
             )
         }
 
-        // Диалог аналитики расходов
         if (showAnalyticsDialog) {
             AnalyticsDialog(
                 receipts = receipts,
@@ -282,6 +348,162 @@ fun MainScreen(
                 onPeriodSelected = { selectedPeriod = it },
                 onDismiss = { showAnalyticsDialog = false }
             )
+        }
+    }
+}
+private fun parseQRContent(qrContent: String): ReceiptData? {
+    return try {
+        val params = qrContent.split("&")
+        val map = params.associate {
+            val parts = it.split("=")
+            parts[0] to (parts.getOrNull(1) ?: "")
+        }
+
+        ReceiptData(
+            t = map["t"] ?: "",
+            s = map["s"] ?: "",
+            fn = map["fn"] ?: "",
+            i = map["i"] ?: "",
+            fp = map["fp"] ?: "",
+            n = map["n"] ?: "1"
+        )
+    } catch (_: Exception) {
+        null
+    }
+}
+
+@Composable
+@androidx.camera.core.ExperimentalGetImage
+private fun QRScannerContent(onResult: (String?) -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+
+    AndroidView(
+        factory = { ctx ->
+            val previewView = PreviewView(ctx).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+
+            val executor = ContextCompat.getMainExecutor(ctx)
+            val barcodeScanner = BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build()
+
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(executor) { imageProxy ->
+                            val image = imageProxy.image
+                            if (image != null) {
+                                val inputImage = InputImage.fromMediaImage(
+                                    image,
+                                    imageProxy.imageInfo.rotationDegrees
+                                )
+
+                                BarcodeScanning.getClient(barcodeScanner)
+                                    .process(inputImage)
+                                    .addOnSuccessListener { barcodes ->
+                                        barcodes.firstOrNull()?.rawValue?.let { qrContent ->
+                                            Handler(Looper.getMainLooper()).post {
+                                                onResult(qrContent)
+                                            }
+                                        }
+                                    }
+                                    .addOnCompleteListener {
+                                        imageProxy.close()
+                                    }
+                            } else {
+                                imageProxy.close()
+                            }
+                        }
+                    }
+
+                val cameraSelector = CameraSelector.Builder()
+                    .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                    .build()
+
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        cameraSelector,
+                        preview,
+                        imageAnalysis
+                    )
+                } catch(ex: Exception) {
+                    Log.e("QRCodeScanner", "Use case binding failed", ex)
+                }
+            }, executor)
+
+            previewView
+        },
+        modifier = Modifier.fillMaxSize()
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        IconButton(
+            onClick = { onResult(null) },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Close scanner",
+                tint = Color.White,
+                modifier = Modifier.size(36.dp)
+            )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                cameraProviderFuture.get().unbindAll()
+            } catch (e: Exception) {
+                Log.e("QRCodeScanner", "Error cleaning up camera", e)
+            }
+        }
+    }
+}
+
+@Composable
+@androidx.camera.core.ExperimentalGetImage
+private fun QRCodeScanner(onResult: (String?) -> Unit) {
+    RequestCameraPermission {
+        QRScannerContent(onResult)
+    }
+}
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun RequestCameraPermission(onPermissionGranted: @Composable () -> Unit) {
+    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+
+    LaunchedEffect(cameraPermissionState) {
+        cameraPermissionState.launchPermissionRequest()
+    }
+
+    when {
+        cameraPermissionState.status.isGranted -> {
+            onPermissionGranted()
+        }
+        cameraPermissionState.status.shouldShowRationale -> {
+            Text("Разрешение на камеру необходимо для сканирования QR-кода.")
+        }
+        else -> {
+            Text("Разрешение отклонено. Включите его в настройках.")
         }
     }
 }
@@ -302,12 +524,11 @@ fun AnalyticsDialog(
         title = { Text("Аналитика расходов") },
         text = {
             Column {
-                // Выбор периода
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Period.values().forEach { period ->
+                    Period.entries.forEach { period ->
                         FilterChip(
                             selected = selectedPeriod == period,
                             onClick = { onPeriodSelected(period) },
@@ -318,10 +539,8 @@ fun AnalyticsDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // График
                 BarChart(spendingData = spendingData)
 
-                // Итоговая сумма
                 Text(
                     text = "Всего потрачено: ${"%.2f".format(total)} руб",
                     style = MaterialTheme.typography.titleMedium,
@@ -382,6 +601,10 @@ fun BarChart(spendingData: Map<String, Float>) {
 } 
 
 fun calculateSpending(receipts: List<Receipt>, period: Period): Map<String, Float> {
+    println("Calculating spending for ${receipts.size} receipts")
+    receipts.forEach { receipt ->
+        println("Receipt from ${receipt.storeName}: sum=${receipt.totalSum}, parsed=${receipt.totalSum?.parseLocalizedNumber()}")
+    }
     val now = LocalDate.now()
     val filteredReceipts = when (period) {
         Period.WEEK -> receipts.filter {
@@ -396,7 +619,7 @@ fun calculateSpending(receipts: List<Receipt>, period: Period): Map<String, Floa
         Period.ALL -> receipts
     }
 
-    return filteredReceipts.groupBy { it.storeName ?: "Другое" }
+    return filteredReceipts.groupBy { it.storeName }
         .mapValues { (_, receipts) ->
             receipts.fold(0f) { acc, receipt ->
                 acc + (receipt.totalSum?.parseLocalizedNumber() ?: 0f)
@@ -404,13 +627,15 @@ fun calculateSpending(receipts: List<Receipt>, period: Period): Map<String, Floa
         }
 }
 
-// Helper function to parse numbers with comma decimal separator
 fun String?.parseLocalizedNumber(): Float {
     if (this == null) return 0f
     return try {
-        // Replace comma with dot and parse as float
-        replace(",", ".").toFloat()
-    } catch (e: NumberFormatException) {
+
+        replace(" ", "")
+            .replace(" ", "")
+            .replace(",", ".")
+            .toFloat()
+    } catch (_: NumberFormatException) {
         0f
     }
 }
@@ -421,7 +646,7 @@ fun parseReceiptDate(dateString: String?): LocalDate? {
             DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("ru"))
                 .parse(it, LocalDate::from)
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }
@@ -466,7 +691,7 @@ fun ReceiptItem(receipt: Receipt) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = receipt.storeName ?: "Неизвестный магазин",
+                    text = receipt.storeName,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -474,7 +699,7 @@ fun ReceiptItem(receipt: Receipt) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = receipt.dateTime ?: "",
+                    text = receipt.dateTime,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -502,14 +727,14 @@ fun ReceiptItem(receipt: Receipt) {
                         contentScale = ContentScale.Fit
                     )
                     Text(
-                        text = receipt.storeName ?: "Неизвестный магазин",
+                        text = receipt.storeName,
                         fontWeight = FontWeight.Bold
                     )
                 }
             },
             text = {
                 Column {
-                    Text("Дата: ${receipt.dateTime ?: "не указана"}")
+                    Text("Дата: ${receipt.dateTime}")
                     Text("Сумма: ${receipt.totalSum} руб")
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -538,7 +763,6 @@ enum class FilterType {
     DATE, STORE, AMOUNT
 }
 
-// Функция для получения ID ресурса по названию магазина
 fun getStoreLogoResource(storeName: String?): Int {
     return when (storeName?.lowercase()) {
         "магнит" -> R.drawable.magnit_logo
@@ -611,6 +835,4 @@ fun AddReceiptDialog(
             }
         }
     )
-
-
 }

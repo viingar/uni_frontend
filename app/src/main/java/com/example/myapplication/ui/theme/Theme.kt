@@ -1,9 +1,10 @@
-package com.example.myapplication.ui.theme
+    package com.example.myapplication.ui.theme
 
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -13,14 +14,26 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import com.example.myapplication.R
+import com.example.myapplication.ui.theme.Typography
 
-private val DarkColorScheme = darkColorScheme(
+
+    private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
     tertiary = Pink80
 )
+    val Montserrat = FontFamily(
+        Font(R.font.montserrat_medium, FontWeight.Medium),
+        Font(R.font.montserrat_bold, FontWeight.Bold)
 
+    )
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
@@ -36,7 +49,19 @@ private val LightColorScheme = lightColorScheme(
     onSurface = Color(0xFF1C1B1F),
     */
 )
-
+    val MyTypography = Typography(
+        bodyLarge = TextStyle(
+            fontFamily = Montserrat,
+            fontWeight = FontWeight.Normal,
+            fontSize = 16.sp
+        ),
+        titleLarge = TextStyle(
+            fontFamily = Montserrat,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp
+        ),
+        // Другие стили...
+    )
 @Composable
 fun MyApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -64,7 +89,7 @@ fun MyApplicationTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = MyTypography,
         content = content
     )
 }

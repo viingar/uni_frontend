@@ -1,12 +1,9 @@
 package com.example.myapplication.ViewModels
 import android.content.Context
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.api.ErrorReportRequest
-import com.example.myapplication.api.Receipt
-import com.example.myapplication.api.ReceiptData
 import com.example.myapplication.api.RetrofitClient
 import com.example.myapplication.api.SecureApiService
 import com.example.myapplication.api.UserInfo
@@ -86,10 +83,10 @@ class ProfileViewModel(
             try {
                 val response = secureApiService.reportError(ErrorReportRequest(message))
                 if (!response.isSuccessful) {
-                    // Обработка ошибки
+
                 }
             } catch (e: Exception) {
-                // Обработка исключения
+
             }
         }
     }

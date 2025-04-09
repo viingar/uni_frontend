@@ -22,7 +22,7 @@ class RegisterViewModel : ViewModel() {
                 )
                 _registrationSuccess.value = response.isSuccessful
             } catch (e: Exception) {
-                // Обработка ошибок
+
             }
         }
     }
