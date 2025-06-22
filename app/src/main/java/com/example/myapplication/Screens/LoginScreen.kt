@@ -58,11 +58,18 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     val isFormValid = username.isNotBlank() && password.isNotBlank()
     val loginSuccess by viewModel.loginSuccess.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
-            navController.navigate("main") {
-                popUpTo("login") { inclusive = true }
+            when (userRole) {
+                "ADMIN" -> navController.navigate("admin") {
+                    popUpTo("login") { inclusive = true }
+                }
+                else -> navController.navigate("main") {
+                    popUpTo("login") { inclusive = true }
+                }
             }
         }
     }
@@ -110,14 +117,20 @@ fun LoginScreen(
 
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { username = it },
+                    onValueChange = { 
+                        username = it
+                        // Очищаем ошибку при изменении логина
+                        if (errorMessage != null) {
+                            viewModel.clearError()
+                        }
+                    },
                     label = { Text("Логин") },
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = "Логин")
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                    colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
@@ -127,7 +140,13 @@ fun LoginScreen(
 
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = { 
+                        password = it
+                        // Очищаем ошибку при изменении пароля
+                        if (errorMessage != null) {
+                            viewModel.clearError()
+                        }
+                    },
                     label = { Text("Пароль") },
                     leadingIcon = {
                         Icon(Icons.Default.Lock, contentDescription = "Пароль")
@@ -144,13 +163,51 @@ fun LoginScreen(
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                    colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                // Отображение ошибки
+                errorMessage?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Error",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = when {
+                                    error.contains("404") || error.contains("not found") -> "Такого пользователя не существует"
+                                    error.contains("401") || error.contains("unauthorized") -> "Такого пользователя не существует"
+                                    error.contains("network") -> "Ошибка сети. Проверьте подключение к интернету"
+                                    else -> "Ошибка входа: $error"
+                                },
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
 
                 Button(
                     onClick = {

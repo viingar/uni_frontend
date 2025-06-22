@@ -19,7 +19,11 @@ class LoginViewModel(
     private val _loginSuccess = MutableStateFlow(false)
     val loginSuccess: StateFlow<Boolean> = _loginSuccess.asStateFlow()
 
+    private val _userRole = MutableStateFlow<String?>(null)
+    val userRole: StateFlow<String?> = _userRole.asStateFlow()
+
     private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     companion object {
         private const val TAG = "LoginViewModel"
@@ -34,6 +38,7 @@ class LoginViewModel(
                     response.body()?.let { loginResponse ->
                         if (loginResponse.accessToken.isNotEmpty()) {
                             saveToken(loginResponse.accessToken)
+                            _userRole.value = loginResponse.role
                             _loginSuccess.value = true
                         } else {
                             _errorMessage.value = "Access token is empty"
@@ -45,14 +50,30 @@ class LoginViewModel(
                     }
                 } else {
                     val error = response.errorBody()?.string() ?: "Unknown error"
-                    _errorMessage.value = "Login failed: $error"
+                    val errorMessage = when (response.code()) {
+                        404 -> "Такого пользователя не существует"
+                        401 -> "Неверный логин или пароль"
+                        400 -> "Неверный формат данных"
+                        500 -> "Ошибка сервера"
+                        else -> "Ошибка входа: $error"
+                    }
+                    _errorMessage.value = errorMessage
                     Log.e(TAG, "Login failed: $error")
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Network error: ${e.message}"
+                val errorMessage = when {
+                    e.message?.contains("Unable to resolve host") == true -> "Ошибка сети. Проверьте подключение к интернету"
+                    e.message?.contains("timeout") == true -> "Превышено время ожидания. Попробуйте еще раз"
+                    else -> "Ошибка сети: ${e.message}"
+                }
+                _errorMessage.value = errorMessage
                 Log.e(TAG, "Network error: ${e.message}", e)
             }
         }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
     }
 
     private fun saveToken(token: String) {

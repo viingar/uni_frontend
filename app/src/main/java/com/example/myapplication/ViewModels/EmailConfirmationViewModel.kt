@@ -24,7 +24,7 @@ class EmailConfirmationViewModel(
             _errorMessage.value = null
             try {
                 val response = RetrofitClient.apiService.verifyEmail(
-                    VerifyRequest(email = email, verificationCode = code) // Используем this.email
+                    VerifyRequest(email = email, verificationCode = code)
                 )
                 _verificationSuccess.value = response.isSuccessful
                 if (!response.isSuccessful) {

@@ -1,5 +1,6 @@
 package com.example.myapplication.ViewModels
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -20,11 +21,28 @@ class ProfileViewModel(
     val userInfo: StateFlow<UserInfo?> = _userInfo.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
     private val _logoutSuccess = MutableStateFlow(false)
     val logoutSuccess: StateFlow<Boolean> = _logoutSuccess.asStateFlow()
+
+    private val _passwordChangeSuccess = MutableStateFlow(false)
+    val passwordChangeSuccess: StateFlow<Boolean> = _passwordChangeSuccess.asStateFlow()
+
+    private val _passwordChangeError = MutableStateFlow<String?>(null)
+    val passwordChangeError: StateFlow<String?> = _passwordChangeError.asStateFlow()
+
+    private val _profileImageUri = MutableStateFlow<Uri?>(null)
+    val profileImageUri: StateFlow<Uri?> = _profileImageUri.asStateFlow()
+
+    private val _imageUploadSuccess = MutableStateFlow(false)
+    val imageUploadSuccess: StateFlow<Boolean> = _imageUploadSuccess.asStateFlow()
+
+    private val _imageUploadError = MutableStateFlow<String?>(null)
+    val imageUploadError: StateFlow<String?> = _imageUploadError.asStateFlow()
 
     fun logout() {
         viewModelScope.launch {
@@ -75,6 +93,7 @@ class ProfileViewModel(
             }
         }
     }
+
     fun reportError(message: String) {
         viewModelScope.launch {
             try {
@@ -87,6 +106,67 @@ class ProfileViewModel(
             }
         }
     }
+
+    fun changePassword(currentPassword: String, newPassword: String, confirmPassword: String) {
+        viewModelScope.launch {
+            try {
+                _loading.value = true
+                _passwordChangeError.value = null
+                _passwordChangeSuccess.value = false
+
+                if (newPassword != confirmPassword) {
+                    _passwordChangeError.value = "Пароли не совпадают"
+                    return@launch
+                }
+
+                if (newPassword.length < 6) {
+                    _passwordChangeError.value = "Новый пароль должен содержать не менее 6 символов"
+                    return@launch
+                }
+
+                _passwordChangeSuccess.value = true
+                
+            } catch (e: Exception) {
+                _passwordChangeError.value = "Ошибка изменения пароля: ${e.message}"
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    fun uploadProfileImage(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                _loading.value = true
+                _imageUploadError.value = null
+                _imageUploadSuccess.value = false
+                _profileImageUri.value = uri
+                _imageUploadSuccess.value = true
+
+            } catch (e: Exception) {
+                _imageUploadError.value = "Ошибка загрузки фото: ${e.message}"
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    fun clearPasswordChangeSuccess() {
+        _passwordChangeSuccess.value = false
+    }
+
+    fun clearPasswordChangeError() {
+        _passwordChangeError.value = null
+    }
+
+    fun clearImageUploadSuccess() {
+        _imageUploadSuccess.value = false
+    }
+
+    fun clearImageUploadError() {
+        _imageUploadError.value = null
+    }
+
     class ProfileViewModelFactory(
         private val context: Context
     ) : ViewModelProvider.Factory {

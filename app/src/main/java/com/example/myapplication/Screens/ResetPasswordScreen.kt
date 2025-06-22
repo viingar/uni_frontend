@@ -1,6 +1,7 @@
 package com.example.myapplication.Screens
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
@@ -16,10 +17,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ViewModels.PasswordResetViewModel
 import com.example.myapplication.ViewModels.PasswordResetViewModel.PasswordResetViewModelFactory
 import com.example.myapplication.api.RetrofitClient
+import com.example.myapplication.ui.theme.MyApplicationTheme
+
+
 @Composable
 fun ResetPasswordScreen(
     navController: NavController,
@@ -43,7 +51,7 @@ fun ResetPasswordScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Reset password for $email",
+            text = "Измените пароль для $email",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -51,19 +59,25 @@ fun ResetPasswordScreen(
         OutlinedTextField(
             value = newPassword,
             onValueChange = { newPassword = it },
-            label = { Text("New Password") },
+            label = { Text("Новый пароль") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Password") },
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = "Toggle password visibility"
+                        contentDescription = "Toggle password visibility",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -71,11 +85,16 @@ fun ResetPasswordScreen(
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Confirm Password") },
+            label = { Text("Подтвердите пароль") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Confirm Password") },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -83,7 +102,7 @@ fun ResetPasswordScreen(
         Button(
             onClick = {
                 if (newPassword != confirmPassword) {
-                    Toast.makeText(context, "Passwords don't match", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Пароли не совпадают", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
 
@@ -95,7 +114,7 @@ fun ResetPasswordScreen(
                     if (success) {
                         Toast.makeText(
                             context,
-                            "Password reset successfully",
+                            "Пароль успешно изменён",
                             Toast.LENGTH_SHORT
                         ).show()
                         navController.navigate("login") {
@@ -104,16 +123,28 @@ fun ResetPasswordScreen(
                     } else {
                         Toast.makeText(
                             context,
-                            "Password reset failed",
+                            "Ошибка изменения пароля",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = newPassword.isNotBlank() && confirmPassword.isNotBlank()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = newPassword.isNotBlank() && confirmPassword.isNotBlank(),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White
+            )
         ) {
-            Text("Reset Password")
+            Text(
+                "Изменить пароль",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium
+                )
+            )
         }
     }
 }

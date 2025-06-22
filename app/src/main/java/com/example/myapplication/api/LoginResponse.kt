@@ -9,5 +9,7 @@ data class LoginResponse(
     @SerializedName("refresh_token")
     val refreshToken: String,
 
-    val message: String
+    val message: String,
+
+    val role:String
 )
